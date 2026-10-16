@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+source "${SCRIPT_DIR}/config.sh"
+
+cat > "${TEMPLATE_DIR}/mmif.aermod.ctrl.template" << 'EOF'
+# MMIF keyword control file
+
+START START_YYYY START_MM START_DD START_HH
+
+STOP STOP_YYYY STOP_MM STOP_DD STOP_HH
+
+TIMEZONE TZ_OFFSET_HR
+
+POINT LL SITE_LAT SITE_LON
+
+INPUT_FILES_HERE
+
+OUTPUT AERMOD SFC OUT_SFC
+
+OUTPUT AERMOD PFL OUT_PFL
+EOF
