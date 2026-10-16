@@ -4,19 +4,19 @@
 # PROJECT PATH
 # ============================================================
 
-BASE="/home/rosybrowell/WRF_projects"
+BASE="/appdisk/WRF"
 
-PROJECT="Test6"
-SITE="Site1"
+PROJECT="projects"
+SITE="TUAS3_GC"
 
 # ============================================================
 # SITE DETAILS
 # ============================================================
 
-SITE_LAT=-32.458486
-SITE_LON=115.819129
+SITE_LAT=1.28
+SITE_LON=103.64
 
-TZ_OFFSET_HR=10
+TZ_OFFSET_HR=8
 TIMEZONE_NAME="AEST"
 
 # Lambert projection defaults
@@ -28,11 +28,11 @@ STAND_LON="${SITE_LON}"
 # SOFTWARE PATHS
 # ============================================================
 
-WRF_DIR="/home/rosybrowell/Build_WRF/WRF"
-WPS_DIR="/home/rosybrowell/Build_WRF/WPS"
-WPS_GEOG="/home/rosybrowell/WRF_data/WPS_GEOG"
-MMIF_EXE="/home/rosybrowell/Build_WRF/MMIF4.1.1/mmif"
-CALWRF_EXE="/home/rosybrowell/Build_WRF/CALWRF/calwrf"
+WRF_DIR="/appdisk/WRF/software/WRF"
+WPS_DIR="/appdisk/WRF/software/WPS"
+WPS_GEOG="/appdisk/WRF/software/WPS"
+MMIF_EXE_DEFAULT="/appdisk/WRF/software/MMIF/MMIF4.1.1/mmif"
+CALWRF_EXE_DEFAULT="/appdisk/WRF/software/CALWRF/code/calwrf"
 
 # ============================================================
 # ERA5 GEOGRAPHIC SETTINGS
@@ -46,10 +46,10 @@ ERA5_DOWNLOAD_MODE="submit_only"
 
 ERA5_USE_AREA="true"
 
-BBOX_NORTH="-31.17"
-BBOX_WEST="114.30"
-BBOX_SOUTH="-33.73"
-BBOX_EAST="117.35"
+BBOX_NORTH="4.6"
+BBOX_WEST="-2.0"
+BBOX_SOUTH="100.3"
+BBOX_EAST="106.9"
 
 BBOX_BUFFER_DEG="1"
 
@@ -136,3 +136,25 @@ GENERATE_MMIF="true"
 GENERATE_CALWRF="true"
 GENERATE_YEARLY_MMIF="true"
 GENERATE_YEARLY_CALWRF="true"
+
+
+
+# ============================================================
+# CREATE PROJECT STRUCTURE
+# ============================================================
+
+mkdir -p "${ROOT}"
+
+mkdir -p "${CONFIG_DIR}"
+mkdir -p "${TEMPLATE_DIR}"
+mkdir -p "${NOTE_DIR}"
+mkdir -p "${SITE_DIR}"
+
+mkdir -p "${ERA5_STORE}"
+
+mkdir -p "${RUN_DIR}"
+
+mkdir -p "${AERMOD_DIR}"
+mkdir -p "${CALMET_DIR}"
+
+mkdir -p "${LOG_DIR}"

@@ -51,18 +51,18 @@ fi
 # ------------------------------------------------------------
 
 WINDOW_JSON=$(
-    python "${SCRIPT_DIR}/common.py" \
+    python3 "${SCRIPT_DIR}/common.py" \
         month_window \
         "${YEAR}" \
         "${MONTH}" \
         "${TZ_OFFSET_HR}"
 )
 
-START_DATE_UTC=$(echo "$WINDOW_JSON" | python -c 'import sys,json;print(json.load(sys.stdin)["start_date_utc"])')
-END_DATE_UTC=$(echo "$WINDOW_JSON"   | python -c 'import sys,json;print(json.load(sys.stdin)["end_date_utc"])')
-REAL_END_DATE_UTC=$(echo "$WINDOW_JSON" | python -c 'import sys,json;print(json.load(sys.stdin)["real_end_date_utc"])')
-WPS_START_DATE_UTC=$(echo "$WINDOW_JSON" | python -c 'import sys,json;print(json.load(sys.stdin)["wps_start_date_utc"])')
-WPS_END_DATE_UTC=$(echo "$WINDOW_JSON" | python -c 'import sys,json;print(json.load(sys.stdin)["wps_end_date_utc"])')
+START_DATE_UTC=$(echo "$WINDOW_JSON" | python3 -c 'import sys,json;print(json.load(sys.stdin)["start_date_utc"])')
+END_DATE_UTC=$(echo "$WINDOW_JSON"   | python3 -c 'import sys,json;print(json.load(sys.stdin)["end_date_utc"])')
+REAL_END_DATE_UTC=$(echo "$WINDOW_JSON" | python3 -c 'import sys,json;print(json.load(sys.stdin)["real_end_date_utc"])')
+WPS_START_DATE_UTC=$(echo "$WINDOW_JSON" | python3 -c 'import sys,json;print(json.load(sys.stdin)["wps_start_date_utc"])')
+WPS_END_DATE_UTC=$(echo "$WINDOW_JSON" | python3 -c 'import sys,json;print(json.load(sys.stdin)["wps_end_date_utc"])')
 
 echo
 echo "================================================"
@@ -80,7 +80,7 @@ echo
 # ------------------------------------------------------------
 
 NEEDED_MONTHS=$(
-    python "${SCRIPT_DIR}/common.py" \
+    python3 "${SCRIPT_DIR}/common.py" \
         required_months \
         "${WPS_START_DATE_UTC}" \
         "${WPS_END_DATE_UTC}"
@@ -273,7 +273,7 @@ ln -sf "${WRF_DIR}/main/wrf.exe" .
 cp -n "${WRF_DIR}/run/"* . 2>/dev/null || true
 
 read LVL SLV < <(
-    python "${SCRIPT_DIR}/common.py" \
+    python3 "${SCRIPT_DIR}/common.py" \
     metgrid_levels \
     "${WPSRUN}/met_em.d01."*
 )
