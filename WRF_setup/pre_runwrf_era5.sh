@@ -6,6 +6,65 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 source "${SCRIPT_DIR}/config.sh"
 
+# ============================================================
+# ERA5 VENV
+# ============================================================
+
+VENV_DIR="${ERA5_VENV}"
+PY_SYS="$HOME/python310/bin/python3.10"
+
+mkdir -p "$(dirname "${VENV_DIR}")"
+
+if [[ ! -x "${VENV_DIR}/bin/python" ]]
+then
+
+    echo "Creating ERA5 venv at ${VENV_DIR}"
+
+    "${PY_SYS}" -m venv "${VENV_DIR}"
+
+fi
+
+if ! "${VENV_DIR}/bin/python" -c "import cdsapi" >/dev/null 2>&1
+then
+
+    echo "Installing ERA5 dependencies..."
+
+    "${VENV_DIR}/bin/python" -m pip install \
+        --upgrade \
+        pip setuptools wheel
+
+    "${VENV_DIR}/bin/python" -m pip install \
+        cdsapi \
+        requests \
+        urllib3 \
+        certifi
+
+fi
+
+ERA5_PY="${VENV_DIR}/bin/python"
+
+[[ -x "${ERA5_PY}" ]] || {
+    echo "ERROR: ERA5 python not found: ${ERA5_PY}"
+    exit 10
+}
+
+# ============================================================
+# ERA5 ENVIRONMENT FOR DOWNLOAD SCRIPT
+# ============================================================
+
+export ERA5_USE_AREA
+export BBOX_NORTH
+export BBOX_WEST
+export BBOX_SOUTH
+export BBOX_EAST
+export BBOX_BUFFER_DEG
+
+
+
+# ============================================================
+# functions
+# ============================================================
+
 usage() {
 
     echo "Usage: $0 YYYYMM"
@@ -40,7 +99,7 @@ mkdir -p "${METDIR}"
 # ============================================================
 
 WINDOW_JSON=$(
-    python3 common.py \
+    python3 "${SCRIPT_DIR}/common.py" \
         month_window \
         "${YEAR}" \
         "${MONTH}" \
@@ -69,7 +128,7 @@ echo
 # ============================================================
 
 NEEDED_MONTHS=$(
-    python3 common.py \
+    python3 "${SCRIPT_DIR}/common.py" \
         required_months \
         "${WPS_START_DATE_UTC}" \
         "${WPS_END_DATE_UTC}"
@@ -112,6 +171,8 @@ then
     echo "Attempting retrieval..."
     echo
 
+    MODE="${ERA5_DOWNLOAD_MODE:-download}"
+
     for TAG in ${NEEDED_MONTHS}
     do
 
@@ -126,22 +187,49 @@ then
         if [[ ! -s "${PL}" || ! -s "${SFC}" ]]
         then
 
-            echo "Requesting ERA5 ${TAG}"
+            echo
+            echo "Retrieving ERA5 ${TAG}"
+            echo
 
-            "${ERA5_PY}" \
-                "${SCRIPT_DIR}/era5_download_month.py" \
-                "${YR}" \
-                "${MO}" \
-                "${ERA5_STORE}/${YR}"
+            if [[ "${MODE}" == "submit_only" ]]
+            then
+
+                "${ERA5_PY}" \
+                    "${SCRIPT_DIR}/python_scripts/era5_download_month.py" \
+                    "${YR}" \
+                    "${MO}" \
+                    "${ERA5_STORE}/${YR}" \
+                    --submit-only
+
+            else
+
+                "${ERA5_PY}" \
+                    "${SCRIPT_DIR}/python_scripts/era5_download_month.py" \
+                    "${YR}" \
+                    "${MO}" \
+                    "${ERA5_STORE}/${YR}"
+
+            fi
 
         fi
 
     done
 
-    INV="${ERA5_STORE}/${YEAR}/era5_invariant.grib"
-
     echo
     echo "Rechecking ERA5 inventory..."
+
+    if [[ "${MODE}" == "submit_only" ]]
+    then
+
+        echo
+        echo "ERA5 requests submitted."
+        echo "Download the GRIB files and rerun."
+        echo
+
+        exit 0
+
+    fi
+
     echo
 
     MISSING=()
@@ -158,6 +246,8 @@ then
         [[ -s "${SFC}" ]] || MISSING+=("${SFC}")
 
     done
+
+    INV="${ERA5_STORE}/${YEAR}/era5_invariant.grib"
 
     [[ -s "${INV}" ]] || MISSING+=("${INV}")
 
@@ -182,8 +272,6 @@ fi
 # ============================================================
 # Link ERA5 Files
 # ============================================================
-
-rm -f "${METDIR}"/*.grib
 
 for TAG in ${NEEDED_MONTHS}
 do
