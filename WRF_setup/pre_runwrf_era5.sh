@@ -142,7 +142,7 @@ echo
 # ERA5 Validation
 # ============================================================
 
-declare -a MISSING
+declare -a MISSING_MONTHS=()
 
 for TAG in ${NEEDED_MONTHS}
 do
@@ -150,73 +150,64 @@ do
     YR="${TAG:0:4}"
 
     PL="${ERA5_STORE}/${YR}/era5_pl_${TAG}.grib"
-
     SFC="${ERA5_STORE}/${YR}/era5_sfc_${TAG}.grib"
 
-    [[ -s "${PL}" ]] || MISSING+=("${PL}")
-
-    [[ -s "${SFC}" ]] || MISSING+=("${SFC}")
+    if [[ ! -s "${PL}" || ! -s "${SFC}" ]]
+    then
+        MISSING_MONTHS+=("${TAG}")
+    fi
 
 done
 
 INV="${ERA5_STORE}/${YEAR}/era5_invariant.grib"
 
-[[ -s "${INV}" ]] || MISSING+=("${INV}")
-
-if [[ ${#MISSING[@]} -gt 0 ]]
+if [[ ${#MISSING_MONTHS[@]} -eq 0 && -s "${INV}" ]]
 then
 
     echo
+    echo "All required ERA5 files already exist."
+    echo "Skipping ERA5 retrieval."
+    echo
+
+else
+
+    echo
     echo "Missing ERA5 files detected."
-    echo "Attempting retrieval..."
     echo
 
     MODE="${ERA5_DOWNLOAD_MODE:-download}"
 
-    for TAG in ${NEEDED_MONTHS}
+    for TAG in "${MISSING_MONTHS[@]}"
     do
 
         YR="${TAG:0:4}"
         MO="${TAG:4:2}"
 
-        PL="${ERA5_STORE}/${YR}/era5_pl_${TAG}.grib"
-        SFC="${ERA5_STORE}/${YR}/era5_sfc_${TAG}.grib"
+        echo
+        echo "Retrieving ERA5 ${TAG}"
+        echo
 
-        mkdir -p "${ERA5_STORE}/${YR}"
-
-        if [[ ! -s "${PL}" || ! -s "${SFC}" ]]
+        if [[ "${MODE}" == "submit_only" ]]
         then
 
-            echo
-            echo "Retrieving ERA5 ${TAG}"
-            echo
+            "${ERA5_PY}" \
+                "${SCRIPT_DIR}/python_scripts/era5_download_month.py" \
+                "${YR}" \
+                "${MO}" \
+                "${ERA5_STORE}/${YR}" \
+                --submit-only
 
-            if [[ "${MODE}" == "submit_only" ]]
-            then
+        else
 
-                "${ERA5_PY}" \
-                    "${SCRIPT_DIR}/python_scripts/era5_download_month.py" \
-                    "${YR}" \
-                    "${MO}" \
-                    "${ERA5_STORE}/${YR}" \
-                    --submit-only
-
-            else
-
-                "${ERA5_PY}" \
-                    "${SCRIPT_DIR}/python_scripts/era5_download_month.py" \
-                    "${YR}" \
-                    "${MO}" \
-                    "${ERA5_STORE}/${YR}"
-
-            fi
+            "${ERA5_PY}" \
+                "${SCRIPT_DIR}/python_scripts/era5_download_month.py" \
+                "${YR}" \
+                "${MO}" \
+                "${ERA5_STORE}/${YR}"
 
         fi
 
     done
-
-    echo
-    echo "Rechecking ERA5 inventory..."
 
     if [[ "${MODE}" == "submit_only" ]]
     then
@@ -227,43 +218,6 @@ then
         echo
 
         exit 0
-
-    fi
-
-    echo
-
-    MISSING=()
-
-    for TAG in ${NEEDED_MONTHS}
-    do
-
-        YR="${TAG:0:4}"
-
-        PL="${ERA5_STORE}/${YR}/era5_pl_${TAG}.grib"
-        SFC="${ERA5_STORE}/${YR}/era5_sfc_${TAG}.grib"
-
-        [[ -s "${PL}" ]] || MISSING+=("${PL}")
-        [[ -s "${SFC}" ]] || MISSING+=("${SFC}")
-
-    done
-
-    INV="${ERA5_STORE}/${YEAR}/era5_invariant.grib"
-
-    [[ -s "${INV}" ]] || MISSING+=("${INV}")
-
-    if [[ ${#MISSING[@]} -gt 0 ]]
-    then
-
-        echo
-        echo "ERROR: ERA5 still missing after retrieval attempt"
-        echo
-
-        for f in "${MISSING[@]}"
-        do
-            echo "  ${f}"
-        done
-
-        exit 10
 
     fi
 

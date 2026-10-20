@@ -7,7 +7,7 @@
 BASE="/appdisk/WRF"
 
 PROJECT="projects"
-SITE="TUAS3_GC"
+SITE="TUAS_FullTest_GC"
 
 # ============================================================
 # SITE DETAILS
@@ -40,7 +40,7 @@ CALWRF_EXE_DEFAULT="/appdisk/WRF/software/CALWRF/code/calwrf"
 
 ERA5_VENV="${HOME}/.venvs/era5"
 ERA5_PY="${ERA5_VENV}/bin/python"
-ERA5_DOWNLOAD_MODE="submit_only"
+ERA5_DOWNLOAD_MODE="download"
 # submit_only
 # download
 
