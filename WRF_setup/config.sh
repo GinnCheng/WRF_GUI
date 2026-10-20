@@ -30,7 +30,7 @@ STAND_LON="${SITE_LON}"
 
 WRF_DIR="/appdisk/WRF/software/WRF"
 WPS_DIR="/appdisk/WRF/software/WPS"
-WPS_GEOG="/appdisk/WRF/software/WPS"
+WPS_GEOG="/appdisk/WRF/static/GEOG"
 MMIF_EXE_DEFAULT="/appdisk/WRF/software/MMIF/MMIF4.1.1/mmif"
 CALWRF_EXE_DEFAULT="/appdisk/WRF/software/CALWRF/code/calwrf"
 
