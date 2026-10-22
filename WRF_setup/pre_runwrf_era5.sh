@@ -99,7 +99,8 @@ mkdir -p "${METDIR}"
 # ============================================================
 
 WINDOW_JSON=$(
-    python3 "${SCRIPT_DIR}/common.py" \
+    "${ERA5_PY}" \
+    "${SCRIPT_DIR}/common.py" \
         month_window \
         "${YEAR}" \
         "${MONTH}" \

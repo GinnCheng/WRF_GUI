@@ -249,15 +249,13 @@ def get_metgrid_levels(
 
     try:
 
-        levels = getattr(
-            ds,
-            "num_metgrid_levels",
-            ""
+        levels = len(
+            ds.dimensions["num_metgrid_levels"]
         )
 
         soil_levels = getattr(
             ds,
-            "num_metgrid_soil_levels",
+            "NUM_METGRID_SOIL_LEVELS",
             ""
         )
 

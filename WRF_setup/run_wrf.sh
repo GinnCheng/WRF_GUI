@@ -6,6 +6,51 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 source "${SCRIPT_DIR}/config.sh"
 
+
+# ============================================================
+# ERA5 VENV
+# ============================================================
+
+VENV_DIR="${ERA5_VENV}"
+PY_SYS="$HOME/python310/bin/python3.10"
+
+mkdir -p "$(dirname "${VENV_DIR}")"
+
+if [[ ! -x "${VENV_DIR}/bin/python" ]]
+then
+
+    echo "Creating ERA5 venv at ${VENV_DIR}"
+
+    "${PY_SYS}" -m venv "${VENV_DIR}"
+
+fi
+
+if ! "${VENV_DIR}/bin/python" -c "import netCDF4" >/dev/null 2>&1
+then
+
+    echo "Installing netCDF4..."
+
+    "${VENV_DIR}/bin/python" -m pip install \
+        --upgrade \
+        pip setuptools wheel
+
+    "${VENV_DIR}/bin/python" -m pip install \
+        netCDF4
+
+fi
+
+ERA5_PY="${VENV_DIR}/bin/python"
+
+[[ -x "${ERA5_PY}" ]] || {
+    echo "ERROR: ERA5 python not found: ${ERA5_PY}"
+    exit 10
+}
+
+
+# -------------------------------------------------------------
+# setup paths
+# -------------------------------------------------------------
+
 usage() {
     echo "Usage: $0 YYYYMM"
     exit 1
@@ -67,54 +112,11 @@ ls "${METDIR}"/*.grib >/dev/null 2>&1 || {
     exit 10
 }
 
-# ------------------------------------------------------------
-# WPS
-# ------------------------------------------------------------
-
-cd "${WPSRUN}"
-
-ln -sf "${WPS_DIR}/geogrid.exe" .
-ln -sf "${WPS_DIR}/ungrib.exe" .
-ln -sf "${WPS_DIR}/metgrid.exe" .
-ln -sf "${WPS_DIR}/link_grib.csh" .
-
-echo
-echo "================================================"
-echo "Running geogrid"
-echo "================================================"
-
-./geogrid.exe \
-2>&1 | tee "${LOGRUN}/geogrid_${YYYYMM}.log"
-
-echo
-echo "================================================"
-echo "Linking GRIB"
-echo "================================================"
-
-rm -f GRIBFILE.*
-
-./link_grib.csh "${METDIR}"/*.grib \
-2>&1 | tee "${LOGRUN}/link_grib_${YYYYMM}.log"
-
-ln -sf \
-"${WPS_DIR}/ungrib/Variable_Tables/Vtable.ECMWF" \
-Vtable
-
-echo
-echo "================================================"
-echo "Running ungrib"
-echo "================================================"
-
-./ungrib.exe \
-2>&1 | tee "${LOGRUN}/ungrib_${YYYYMM}.log"
-
-echo
-echo "================================================"
-echo "Running metgrid"
-echo "================================================"
-
-./metgrid.exe \
-2>&1 | tee "${LOGRUN}/metgrid_${YYYYMM}.log"
+ls -1 "${WPSRUN}/met_em.d01."*.nc >/dev/null 2>&1 || {
+    echo "ERROR: No met_em.d01.*.nc in ${WPSRUN}"
+    echo "Run pre_runwrf_wps.sh ${YYYYMM} first"
+    exit 10
+}
 
 # ------------------------------------------------------------
 # WRF
@@ -130,19 +132,59 @@ ln -sf "${WRF_DIR}/main/wrf.exe" .
 
 cp -n "${WRF_DIR}/run/"* . 2>/dev/null || true
 
+MET1=$(find "${WPSRUN}" \
+    -maxdepth 1 \
+    -name 'met_em.d01*.nc' \
+    -print \
+    -quit)
+
+if [[ -z "${MET1}" ]]; then
+    echo "ERROR: No met_em.d01*.nc found in ${WPSRUN}"
+    exit 10
+fi
+
+echo "Using MET1=${MET1}"
+
 read LVL SLV < <(
-    python3 "${SCRIPT_DIR}/common.py" \
+    "${ERA5_PY}" \
+    "${SCRIPT_DIR}/common.py" \
     metgrid_levels \
-    "${WPSRUN}/met_em.d01."*
+    "${MET1}"
 )
 
-sed -i \
-"s/METGRID_LEVELS/${LVL}/g" \
-namelist.input
 
-sed -i \
-"s/METGRID_SOIL_LEVELS/${SLV}/g" \
-namelist.input
+
+
+echo "Detected LVL=${LVL} SLV=${SLV}"
+
+[[ -n "${LVL}" ]] || {
+    echo "ERROR: Failed to determine num_metgrid_levels"
+    exit 10
+}
+
+[[ -n "${SLV}" ]] || {
+    echo "ERROR: Failed to determine num_metgrid_soil_levels"
+    exit 10
+}
+
+for f in \
+    namelist.input \
+    namelist.input.real \
+    namelist.input.wrf
+do
+
+    sed -i \
+    "s/METGRID_LEVELS/${LVL}/g" \
+    "$f"
+
+    sed -i \
+    "s/METGRID_SOIL_LEVELS/${SLV}/g" \
+    "$f"
+
+done
+
+
+cp -f namelist.input.real namelist.input
 
 echo
 echo "================================================"
@@ -153,20 +195,24 @@ mpirun -np "${NPROC}" \
 ./real.exe \
 2>&1 | tee "${LOGRUN}/real_${YYYYMM}.log"
 
-cp -f namelist.input.wrf namelist.input
 
-sed -i \
-"s/METGRID_LEVELS/${LVL}/g" \
-namelist.input
+[[ -s wrfinput_d01 ]] || {
+    echo "ERROR: real.exe did not create wrfinput_d01"
+    exit 10
+}
 
-sed -i \
-"s/METGRID_SOIL_LEVELS/${SLV}/g" \
-namelist.input
+[[ -s wrfbdy_d01 ]] || {
+    echo "ERROR: real.exe did not create wrfbdy_d01"
+    exit 10
+}
+
 
 echo
 echo "================================================"
 echo "Running WRF"
 echo "================================================"
+
+cp -f namelist.input.wrf namelist.input
 
 mpirun -np "${NPROC}" \
 ./wrf.exe \
