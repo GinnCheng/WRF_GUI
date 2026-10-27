@@ -2,9 +2,10 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/wrf_package" && pwd)"
 
-source "${SCRIPT_DIR}/config.sh"
+source "${INIT_DIR}/config.sh"
 
 # ============================================================
 # Python Virtual Environment
