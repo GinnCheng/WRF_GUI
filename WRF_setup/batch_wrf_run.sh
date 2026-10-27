@@ -55,11 +55,15 @@ ERA5_PY="${VENV_DIR}/bin/python"
 while read -r YYYYMM
 do
 
-    "${SCRIPT_DIR}/pre_runwrf_era5.sh" "${YYYYMM}"
+    echo "START wrfing ${YYYYMM}"
 
-    "${SCRIPT_DIR}/pre_runwrf_wps.sh" "${YYYYMM}"
+    "${SCRIPT_DIR}/pre_runwrf_era5.sh" "${YYYYMM}" < /dev/null
 
-    "${SCRIPT_DIR}/run_wrf.sh" "${YYYYMM}"
+    "${SCRIPT_DIR}/pre_runwrf_wps.sh" "${YYYYMM}" < /dev/null
+
+    "${SCRIPT_DIR}/run_wrf.sh" "${YYYYMM}" < /dev/null
+
+    echo "END wrfing ${YYYYMM}"
 
 done < <(
     "${ERA5_PY}" \

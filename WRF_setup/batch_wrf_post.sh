@@ -54,9 +54,16 @@ ERA5_PY="${VENV_DIR}/bin/python"
 while read -r YYYY
 do
 
-    "${SCRIPT_DIR}/calwrf.sh" "year" "${YYYY}"
+    echo "START calwrf post-processing ${YYYY}"
 
-    "${SCRIPT_DIR}/mmif.sh" "year" "${YYYY}"
+    "${SCRIPT_DIR}/calwrf.sh" "year" "${YYYY}" < /dev/null
+
+    echo "END calwrf post-processing ${YYYY}"
+    echo "START mmif post-processing ${YYYY}"
+
+    "${SCRIPT_DIR}/mmif.sh" "year" "${YYYY}" < /dev/null
+
+    echo "END mmif post-processing ${YYYY}"
 
 done < <(
     "${ERA5_PY}" \
