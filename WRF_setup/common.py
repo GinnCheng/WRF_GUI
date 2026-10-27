@@ -348,6 +348,55 @@ def cmd_metgrid_levels():
     )
 
 
+
+
+def cmd_periods():
+
+    start = sys.argv[2]
+    end = sys.argv[3]
+    step = sys.argv[4]
+
+    if step == "month":
+
+        current = datetime.strptime(start, "%Y%m")
+        stop = datetime.strptime(end, "%Y%m")
+
+        while current <= stop:
+            print(current.strftime("%Y%m"))
+
+            y = current.year
+            m = current.month + 1
+
+            if m > 12:
+                y += 1
+                m = 1
+
+            current = current.replace(
+                year=y,
+                month=m
+            )
+
+    elif step == "year":
+
+        start_year = int(start)
+        end_year = int(end)
+
+        for y in range(
+            start_year,
+            end_year + 1
+        ):
+            print(y)
+
+    else:
+
+        raise ValueError(
+            f"Unsupported step: {step}"
+        )
+
+
+
+
+
 def main():
 
     if len(sys.argv) < 2:
@@ -375,6 +424,9 @@ def main():
 
     elif command == "metgrid_levels":
         cmd_metgrid_levels()
+
+    elif command == 'batch':
+        cmd_periods()
 
     else:
 
