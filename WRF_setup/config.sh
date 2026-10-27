@@ -31,8 +31,8 @@ STAND_LON="${SITE_LON}"
 WRF_DIR="/appdisk/WRF/software/WRF"
 WPS_DIR="/appdisk/WRF/software/WPS"
 WPS_GEOG="/appdisk/WRF/static/GEOG"
-MMIF_EXE_DEFAULT="/appdisk/WRF/software/MMIF/MMIF4.1.1/mmif"
-CALWRF_EXE_DEFAULT="/appdisk/WRF/software/CALWRF/code/calwrf"
+MMIF_EXE="/appdisk/WRF/software/MMIF/MMIFv4.1.1/MMIF4.1.1/mmif"
+CALWRF_EXE="/appdisk/WRF/software/CALWRF/code/calwrf"
 
 # ============================================================
 # ERA5 GEOGRAPHIC SETTINGS

@@ -26,6 +26,47 @@ TAG="$2"
 DOMAIN="${3:-${DEFAULT_DOMAIN}}"
 
 # ============================================================
+# Python Virtual Environment
+# ============================================================
+VENV_DIR="${ERA5_VENV}"
+PY_SYS="$HOME/python310/bin/python3.10"
+
+mkdir -p "$(dirname "${VENV_DIR}")"
+
+if [[ ! -x "${VENV_DIR}/bin/python" ]]
+then
+
+    echo "Creating ERA5 venv at ${VENV_DIR}"
+
+    "${PY_SYS}" -m venv "${VENV_DIR}"
+
+fi
+
+if ! "${VENV_DIR}/bin/python" -c "import cdsapi" >/dev/null 2>&1
+then
+
+    echo "Installing ERA5 dependencies..."
+
+    "${VENV_DIR}/bin/python" -m pip install \
+        --upgrade \
+        pip setuptools wheel
+
+    "${VENV_DIR}/bin/python" -m pip install \
+        cdsapi \
+        requests \
+        urllib3 \
+        certifi
+
+fi
+
+ERA5_PY="${VENV_DIR}/bin/python"
+
+[[ -x "${ERA5_PY}" ]] || {
+    echo "ERROR: ERA5 python not found: ${ERA5_PY}"
+    exit 10
+}
+
+# ============================================================
 # Helpers
 # ============================================================
 
@@ -48,14 +89,16 @@ build_control_file() {
         "${CTRL}"
 
     START_LST=$(
-        python "${SCRIPT_DIR}/common.py" \
+        "${ERA5_PY}" \
+         "${SCRIPT_DIR}/common.py" \
             lst \
             "${START}" \
             "${TZ_OFFSET_HR}"
     )
 
     END_LST=$(
-        python "${SCRIPT_DIR}/common.py" \
+        "${ERA5_PY}" \
+         "${SCRIPT_DIR}/common.py" \
             lst \
             "${END}" \
             "${TZ_OFFSET_HR}"
@@ -147,14 +190,16 @@ run_month() {
     LAST_FILE=$(tail -n 1 "${FILELIST}")
 
     FIRST_TIME=$(
-        python "${SCRIPT_DIR}/common.py" \
+        "${ERA5_PY}" \
+         "${SCRIPT_DIR}/common.py" \
             wrf_times \
             "${FIRST_FILE}" \
         | head -n 1
     )
 
     LAST_TIME=$(
-        python "${SCRIPT_DIR}/common.py" \
+        "${ERA5_PY}" \
+         "${SCRIPT_DIR}/common.py" \
             wrf_times \
             "${LAST_FILE}" \
         | tail -n 1
@@ -226,14 +271,16 @@ run_year() {
     LAST_FILE=$(tail -n 1 "${FILELIST}")
 
     FIRST_TIME=$(
-        python "${SCRIPT_DIR}/common.py" \
+        "${ERA5_PY}" \
+         "${SCRIPT_DIR}/common.py" \
             wrf_times \
             "${FIRST_FILE}" \
         | head -n 1
     )
 
     LAST_TIME=$(
-        python "${SCRIPT_DIR}/common.py" \
+        "${ERA5_PY}" \
+         "${SCRIPT_DIR}/common.py" \
             wrf_times \
             "${LAST_FILE}" \
         | tail -n 1
