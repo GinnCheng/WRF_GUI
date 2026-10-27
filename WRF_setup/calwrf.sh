@@ -25,6 +25,48 @@ TAG="$2"
 
 DOMAIN="${3:-${DEFAULT_DOMAIN}}"
 
+
+# ============================================================
+# Python Virtual Environment
+# ============================================================
+VENV_DIR="${ERA5_VENV}"
+PY_SYS="$HOME/python310/bin/python3.10"
+
+mkdir -p "$(dirname "${VENV_DIR}")"
+
+if [[ ! -x "${VENV_DIR}/bin/python" ]]
+then
+
+    echo "Creating ERA5 venv at ${VENV_DIR}"
+
+    "${PY_SYS}" -m venv "${VENV_DIR}"
+
+fi
+
+if ! "${VENV_DIR}/bin/python" -c "import cdsapi" >/dev/null 2>&1
+then
+
+    echo "Installing ERA5 dependencies..."
+
+    "${VENV_DIR}/bin/python" -m pip install \
+        --upgrade \
+        pip setuptools wheel
+
+    "${VENV_DIR}/bin/python" -m pip install \
+        cdsapi \
+        requests \
+        urllib3 \
+        certifi
+
+fi
+
+ERA5_PY="${VENV_DIR}/bin/python"
+
+[[ -x "${ERA5_PY}" ]] || {
+    echo "ERROR: ERA5 python not found: ${ERA5_PY}"
+    exit 10
+}
+
 # ============================================================
 # Build input file
 # ============================================================
@@ -32,15 +74,10 @@ DOMAIN="${3:-${DEFAULT_DOMAIN}}"
 build_input_file() {
 
     local INPUT_FILE="$1"
-
     local START_TIME="$2"
-
     local END_TIME="$3"
-
     local FILELIST="$4"
-
     local OUTFILE="$5"
-
     local LOGFILE="$6"
 
     cp \
@@ -48,15 +85,17 @@ build_input_file() {
         "${INPUT_FILE}"
 
     START_YYYYMMDDHH=$(
-        python "${SCRIPT_DIR}/common.py" \
-            yyyymmddhh \
-            "${START_TIME}"
+        "${ERA5_PY}" \
+        "${SCRIPT_DIR}/common.py" \
+        yyyymmddhh \
+        "${START_TIME}"
     )
 
     END_YYYYMMDDHH=$(
-        python "${SCRIPT_DIR}/common.py" \
-            yyyymmddhh \
-            "${END_TIME}"
+        "${ERA5_PY}" \
+        "${SCRIPT_DIR}/common.py" \
+        yyyymmddhh \
+        "${END_TIME}"
     )
 
     NFILES=$(wc -l < "${FILELIST}")
@@ -119,14 +158,16 @@ run_month() {
     LAST_FILE=$(tail -n 1 "${FILELIST}")
 
     FIRST_TIME=$(
-        python "${SCRIPT_DIR}/common.py" \
+        "${ERA5_PY}" \
+         "${SCRIPT_DIR}/common.py" \
             wrf_times \
             "${FIRST_FILE}" \
         | head -n 1
     )
 
     LAST_TIME=$(
-        python "${SCRIPT_DIR}/common.py" \
+        "${ERA5_PY}" \
+         "${SCRIPT_DIR}/common.py" \
             wrf_times \
             "${LAST_FILE}" \
         | tail -n 1
@@ -134,7 +175,7 @@ run_month() {
 
     INPUT_FILE="${OUTDIR}/calwrf_${YYYYMM}_${DOMAIN}.inp"
 
-    OUTFILE="${OUTDIR}/${SITE}_${YYYYMM}_${DOMAIN}.m3d"
+    OUTFILE="${OUTDIR}/calwrf_${YYYYMM}_${DOMAIN}.m3d"
 
     LOGFILE="${OUTDIR}/calwrf_${YYYYMM}_${DOMAIN}.log"
 
@@ -146,17 +187,18 @@ run_month() {
         "${OUTFILE}" \
         "${LOGFILE}"
 
+    # remove blank lines
+    sed -i '/^[[:space:]]*$/d' "${INPUT_FILE}"
+
     echo
     echo "======================================"
     echo "Running CALWRF"
     echo "======================================"
     echo
 
-    (
-        cd "${OUTDIR}"
 
-        "${CALWRF_EXE}" < "${INPUT_FILE}"
-    ) > "${LOGFILE}" 2>&1
+    "${CALWRF_EXE}" "${INPUT_FILE}" \
+      2>&1 | tee "${LOGFILE}"
 
     echo
     echo "Generated:"
@@ -199,14 +241,16 @@ run_year() {
     LAST_FILE=$(tail -n 1 "${FILELIST}")
 
     FIRST_TIME=$(
-        python "${SCRIPT_DIR}/common.py" \
+        "${ERA5_PY}" \
+         "${SCRIPT_DIR}/common.py" \
             wrf_times \
             "${FIRST_FILE}" \
         | head -n 1
     )
 
     LAST_TIME=$(
-        python "${SCRIPT_DIR}/common.py" \
+        "${ERA5_PY}" \
+         "${SCRIPT_DIR}/common.py" \
             wrf_times \
             "${LAST_FILE}" \
         | tail -n 1
@@ -214,7 +258,7 @@ run_year() {
 
     INPUT_FILE="${OUTDIR}/calwrf_${YEAR}_${DOMAIN}.inp"
 
-    OUTFILE="${OUTDIR}/${SITE}_${YEAR}_${DOMAIN}.m3d"
+    OUTFILE="${OUTDIR}/calwrf_${YEAR}_${DOMAIN}.m3d"
 
     LOGFILE="${OUTDIR}/calwrf_${YEAR}_${DOMAIN}.log"
 
@@ -226,17 +270,17 @@ run_year() {
         "${OUTFILE}" \
         "${LOGFILE}"
 
+    # remove blank lines
+    sed -i '/^[[:space:]]*$/d' "${INPUT_FILE}"
+
     echo
     echo "======================================"
     echo "Running Annual CALWRF"
     echo "======================================"
     echo
 
-    (
-        cd "${OUTDIR}"
-
-        "${CALWRF_EXE}" < "${INPUT_FILE}"
-    ) > "${LOGFILE}" 2>&1
+    "${CALWRF_EXE}" "${INPUT_FILE}" \
+      2>&1 | tee "${LOGFILE}"
 
     echo
     echo "Generated:"
